@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  # 1️⃣ OCR Service
+  dots-ocr-server:
+    build:
+      context: ./services/ocr
+      dockerfile: Dockerfile
+    container_name: dots-ocr
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./model/dots.ocr:/workspace/weights/DotsOCR
+    environment:
+      - PYTHONPATH=/workspace/weights:$PYTHONPATH
+    command: >
+      bash -c "sed -i '/^from vllm\.entrypoints\.cli\.main import main/a from DotsOCR import modeling_dots_ocr_vllm' $(which vllm)
+      && exec vllm serve /workspace/weights/DotsOCR --served-model-name dotsocr-model --trust-remote-code"
+
+  # 2️⃣ Transform Service (Gemini API)
+  transform:
+    build:
+      context: ./services/transform
+    container_name: transform
+    ports:
+      - "8100:8100"
+    environment:
+      - OCR_API=http://dots-ocr-server:8000
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    depends_on:
+      - dots-ocr-server
+
+  # 3️⃣ Migration Service
+  migration:
+    build:
+      context: ./services/migration
+    container_name: migration
+    ports:
+      - "8200:8200"
+    environment:
+      - TRANSFORM_API=http://transform:8100
+      - DB_HOST=your-db
+      - DB_USER=postgres
+      - DB_PASS=postgres
+    depends_on:
+      - transform
+      - db
+
+  # 4️⃣ Database
+  db:
+    image: postgres:15
+    container_name: migration-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: migration
+    ports:
+      - "5432:5432"
+
+  # 5️⃣ Monitoring stack
+  prometheus:
+    image: prom/prometheus
+    volumes:
+      - ./services/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
