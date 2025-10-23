@@ -46,18 +46,7 @@ services:
       - transform
       - db
 
-  # 4️⃣ Database
-  db:
-    image: postgres:15
-    container_name: migration-db
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: migration
-    ports:
-      - "5432:5432"
-
-  # 5️⃣ Monitoring stack
+  # Monitoring stack
   prometheus:
     image: prom/prometheus
     volumes:
