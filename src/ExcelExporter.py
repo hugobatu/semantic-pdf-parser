@@ -2,13 +2,13 @@ from ContextRecognition import extract_books
 import pandas as pd
 from pathlib import Path
 
-def export_to_excel(all_reading_lists, filename="course_reading_lists_with_vietnamese_name.xlsx"):
+def export_to_excel(all_reading_lists, filename="course_reading_lists.xlsx"):
     # default output directory
     output_dir = Path(__file__).parent / "output"
     output_dir.mkdir(exist_ok=True)
 
     if not filename:
-        filename = "course_reading_lists_with_vietnamese_name.xlsx"
+        filename = "course_reading_lists.xlsx"
 
     file_path = output_dir / filename
 
